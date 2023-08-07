@@ -1,4 +1,6 @@
 target
+bin
+.history
 *.iml
 *.iws
 *.ipr
