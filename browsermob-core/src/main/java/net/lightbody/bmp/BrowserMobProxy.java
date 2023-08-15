@@ -191,6 +191,21 @@ public interface BrowserMobProxy {
     void disableHarCaptureTypes(CaptureType... captureTypes);
 
     /**
+     * Enables HAR capture filters. If a request or response matches any of the specified filters, it will be captured in the HAR file.
+     */
+    void addCapturePattern(String pattern);
+
+    /**
+     * Clear HAR capture filters.
+     */
+    void clearCapturePatterns();
+
+    /**
+     * @return a copy of the current HAR capture filters. The Set cannot be used to modify the HAR capture filters currently in effect.
+     */
+    Collection<String> getCapturePatterns();
+
+    /**
      * Starts a new HAR page using the default page naming convention. The default page naming convention is "Page #", where "#" resets to 1
      * every time {@link #newHar()} or {@link #newHar(String)} is called, and increments on every subsequent call to {@link #newPage()} or
      * {@link #newHar(String)}. Populates the {@link net.lightbody.bmp.core.har.HarPageTimings#onLoad} value based on the amount of time
