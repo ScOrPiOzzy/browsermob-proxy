@@ -37,6 +37,7 @@ import net.lightbody.bmp.mitm.keys.RSAKeyGenerator;
 import net.lightbody.bmp.mitm.manager.ImpersonatingMitmManager;
 import net.lightbody.bmp.proxy.ActivityMonitor;
 import net.lightbody.bmp.proxy.BlacklistEntry;
+import net.lightbody.bmp.proxy.CapturePattern;
 import net.lightbody.bmp.proxy.CaptureType;
 import net.lightbody.bmp.proxy.RewriteRule;
 import net.lightbody.bmp.proxy.Whitelist;
@@ -170,6 +171,10 @@ public class BrowserMobProxyServer implements BrowserMobProxy {
      * List of accepted URL patterns. Unlisted URL patterns will be rejected with the response code contained in the Whitelist.
      */
     private final AtomicReference<Whitelist> whitelist = new AtomicReference<>(Whitelist.WHITELIST_DISABLED);
+    /**
+     * List of accepted URL patterns. Unlisted URL patterns will be rejected in har.
+     */
+    private final AtomicReference<CapturePattern> capturePattern = new AtomicReference<>(CapturePattern.CAPTURE_PATTERN);
 
     /**
      * Additional headers that will be sent with every request. The map is declared as a ConcurrentMap to indicate that writes may be performed
@@ -1137,6 +1142,55 @@ public class BrowserMobProxyServer implements BrowserMobProxy {
         return maxBufferSize;
     }
 
+    @Override
+    public void addCapturePattern(String captureRegex) {
+        // to make sure this method is thread-safe, we need to guarantee that the
+        // "snapshot" of the whitelist taken at the beginning
+        // of the method has not been replaced by the time we have constructed a new
+        // whitelist at the end of the method
+        boolean capturePatternUpdated = false;
+        while (!capturePatternUpdated) {
+            CapturePattern currentCapturePattern = this.capturePattern.get();
+            // retrieve the response code and list of patterns from the current whitelist,
+            // the construct a new list of patterns that contains
+            // all of the old whitelist's patterns + this new pattern
+            List<String> newPatterns = new ArrayList<>(currentCapturePattern.getPatterns().size() + 1);
+            for (Pattern pattern : currentCapturePattern.getPatterns()) {
+                newPatterns.add(pattern.pattern());
+            }
+            newPatterns.add(captureRegex);
+
+            // create a new (immutable) Whitelist object with the new pattern list and
+            // status code
+            CapturePattern newCapturePattern = new CapturePattern(newPatterns);
+
+            // replace the current capturePatternList with the new capturePatternList only
+            // if the current
+            // capturePatternList has not changed since we started
+            capturePatternUpdated = this.capturePattern.compareAndSet(currentCapturePattern, newCapturePattern);
+        }
+    }
+
+    @Override
+    public Collection<String> getCapturePatterns() {
+        ImmutableList.Builder<String> builder = ImmutableList.builder();
+        for (Pattern pattern : this.capturePattern.get().getPatterns()) {
+            builder.add(pattern.pattern());
+        }
+        return builder.build();
+    }
+
+    @Override
+    public void clearCapturePatterns() {
+        capturePattern.set(new CapturePattern());
+    }
+
+    private boolean isValidateUrl(HttpRequest originalRequest, ChannelHandlerContext ctx) {
+        CapturePattern capturePattern = this.capturePattern.get();
+        String url = BrowserMobHttpUtil.getFullUrl(originalRequest, ctx);
+        return capturePattern.matches(url);
+    }
+
     /**
      * Enables the HAR capture filter if it has not already been enabled. The filter will be added to the end of the filter chain.
      * The HAR capture filter is relatively expensive, so this method is only called when a HAR is requested.
@@ -1149,6 +1203,9 @@ public class BrowserMobProxyServer implements BrowserMobProxy {
             addHttpFilterFactory(new HttpFiltersSourceAdapter() {
                 @Override
                 public HttpFilters filterRequest(HttpRequest originalRequest, ChannelHandlerContext ctx) {
+                    if (!isValidateUrl(originalRequest, ctx)) {
+                        return null;
+                    }
                     Har har = getHar();
                     if (har != null && !ProxyUtils.isCONNECT(originalRequest)) {
                         return new HarCaptureFilter(originalRequest, ctx, har, getCurrentHarPage() == null ? null : getCurrentHarPage().getId(), getHarCaptureTypes());
@@ -1162,6 +1219,9 @@ public class BrowserMobProxyServer implements BrowserMobProxy {
             addHttpFilterFactory(new HttpFiltersSourceAdapter() {
                 @Override
                 public HttpFilters filterRequest(HttpRequest originalRequest, ChannelHandlerContext ctx) {
+                    if (!isValidateUrl(originalRequest, ctx)) {
+                        return null;
+                    }
                     Har har = getHar();
                     if (har != null && ProxyUtils.isCONNECT(originalRequest)) {
                         return new HttpConnectHarCaptureFilter(originalRequest, ctx, har, getCurrentHarPage() == null ? null : getCurrentHarPage().getId());
