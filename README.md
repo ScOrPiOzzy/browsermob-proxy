@@ -9,7 +9,9 @@ If you're running BrowserMob Proxy within a Java application or Selenium test, g
 command line as a standalone proxy, start with [Standalone](#getting-started-standalone).
 
 ### Getting started: Embedded Mode
+
 To use BrowserMob Proxy in your tests or application, add the `browsermob-core` dependency to your pom:
+
 ```xml
     <dependency>
         <groupId>net.lightbody.bmp</groupId>
@@ -20,6 +22,7 @@ To use BrowserMob Proxy in your tests or application, add the `browsermob-core` 
 ```
 
 Start the proxy:
+
 ```java
     BrowserMobProxy proxy = new BrowserMobProxyServer();
     proxy.start(0);
@@ -32,14 +35,17 @@ Then configure your HTTP client to use a proxy running at the specified port.
 **Using with Selenium?** See the [Using with Selenium](#using-with-selenium) section.
 
 ### Getting started: Standalone
+
 To run in standalone mode from the command line, first download the latest release from the [releases page](https://github.com/lightbody/browsermob-proxy/releases), or [build the latest from source](#building-the-latest-from-source).
 
 Start the REST API:
+
 ```sh
     ./browsermob-proxy -port 8080
 ```
 
 Then create a proxy server instance:
+
 ```sh
     curl -X POST http://localhost:8080/proxy
     {"port":8081}
@@ -92,12 +98,12 @@ If you must continue using the legacy Jetty-based implementation, include the `b
 
 The proxy is programmatically controlled via a REST interface or by being embedded directly inside Java-based programs and unit tests. It captures performance data in the [HAR format](http://groups.google.com/group/http-archive-specification). In addition it can actually control HTTP traffic, such as:
 
- - blacklisting and whitelisting certain URL patterns
- - simulating various bandwidth and latency
- - remapping DNS lookups
- - flushing DNS caching
- - controlling DNS and request timeouts
- - automatic BASIC authorization
+- blacklisting and whitelisting certain URL patterns
+- simulating various bandwidth and latency
+- remapping DNS lookups
+- flushing DNS caching
+- controlling DNS and request timeouts
+- automatic BASIC authorization
 
 ### REST API
 
@@ -130,35 +136,38 @@ Once that is done, a new proxy will be available on the port returned. All you h
 
 Description |  HTTP method | Request path | Request parameters
 --- | :---: | :---: | ---
-Get a list of ports attached to `ProxyServer` instances managed by `ProxyManager` | GET | */proxy* ||
-Creates a new proxy to run requests off of | POST | */proxy* | <p>*port* - Integer, The specific port to start the proxy service on. Optional, default is generated and returned in response.</p><p>*proxyUsername* - String, The username to use to authenticate with the chained proxy. Optional, default to null.</p><p>*proxyPassword* - String, The password to use to authenticate with the chained proxy. Optional, default to null.</p><p>*bindAddress* - String, If running BrowserMob Proxy in a multi-homed environment, specify a desired bind address. Optional, default to "0.0.0.0".</p><p>*serverBindAddress* - String, If running BrowserMob Proxy in a multi-homed environment, specify a desired server bind address. Optional, default to "0.0.0.0".</p><p>*useEcc* - Boolean. True, Uses Elliptic Curve Cryptography for certificate impersonation. Optional, default to "false".</p><p>*trustAllServers* - Boolean. True, Disables verification of all upstream servers' SSL certificates. All upstream servers will be trusted, even if they do not present valid certificates signed by certification authorities in the JDK's trust store. Optional, default to "false".</p>| 
-<a name="harcreate">Creates a new HAR</a> attached to the proxy and returns the HAR content if there was a previous HAR. *[port]* in request path it is port where your proxy was started | PUT |*/proxy/[port]/har* |<p>*captureHeaders* - Boolean, capture headers or not. Optional, default to "false".</p><p>*captureCookies* - Boolean, capture cookies or not. Optional, default to "false".</p><p>*captureContent* - Boolean, capture content bodies or not. Optional, default to "false".</p><p>*captureBinaryContent* - Boolean, capture binary content or not. Optional, default to "false".</p><p>*initialPageRef* - The string name of The first page ref that should be used in the HAR. Optional, default to "Page 1".</p><p>*initialPageTitle* - The title of first HAR page. Optional, default to *initialPageRef*.</p>
-Starts a new page on the existing HAR. *[port]* in request path it is port where your proxy was started | PUT | */proxy/[port]/har/pageRef* |<p>*pageRef* - The string name of the first page ref that should be used in the HAR. Optional, default to "Page N" where N is the next page number.</p><p>*pageTitle* - The title of new HAR page. Optional, default to `pageRef`.</p>
-Shuts down the proxy and closes the port. *[port]* in request path it is port where your proxy was started | DELETE | */proxy/[port]* ||
-Returns the JSON/HAR content representing all the HTTP traffic passed through the proxy (provided you have already created the HAR with [this method](#harcreate)) | GET | */proxy/[port]/har* ||
-Displays whitelisted items | GET | */proxy/[port]/whitelist* ||
-Sets a list of URL patterns to whitelist | PUT | */proxy/[port]/whitelist* |<p>*regex* - A comma separated list of regular expressions.</p><p>*status* - The HTTP status code to return for URLs that do not match the whitelist.</p>|
-Clears all URL patterns from the whitelist  | DELETE | */proxy/[port]/whitelist* ||
-Displays blacklisted items | GET | */proxy/[port]/blacklist* ||
-Set a URL to blacklist | PUT | */proxy/[port]/blacklist* |<p>*regex* - The blacklist regular expression.</p><p>*status* - The HTTP status code to return for URLs that are blacklisted.</p><p>*method* - The regular expression for matching HTTP method (GET, POST, PUT, etc). Optional, by default processing all HTTP method.</p>|
-Clears all URL patterns from the blacklist | DELETE | */proxy/[port]/blacklist* ||
-Limit the bandwidth through the proxy on the *[port]* | PUT | */proxy/[port]/limit* |<p>*downstreamKbps* - Sets the downstream bandwidth limit in kbps. Optional.</p><p>*upstreamKbps* - Sets the upstream bandwidth limit kbps. Optional, by default unlimited.</p><p>*downstreamMaxKB* - Specifies how many kilobytes in total the client is allowed to download through the proxy. Optional, by default unlimited.</p><p>*upstreamMaxKB* - Specifies how many kilobytes in total the client is allowed to upload through the proxy. Optional, by default unlimited.</p><p>*latency* - Add the given latency to each HTTP request. Optional, by default all requests are invoked without latency.</p><p>*enable* - A boolean that enable bandwidth limiter. Optional, by default to "false", but setting any of the properties above will implicitly enable throttling</p><p>*payloadPercentage* - Specifying what percentage of data sent is payload, e.g. use this to take into account overhead due to tcp/ip. Optional.</p><p>*maxBitsPerSecond* - The max bits per seconds you want this instance of StreamManager to respect. Optional.</p>
-Displays the amount of data remaining to be uploaded/downloaded until the limit is reached | GET | */proxy/[port]/limit* ||
-Set and override HTTP Request headers | POST | */proxy/[port]/headers* | Payload data should be **JSON** encoded set of headers. Where key is a header name (such as "User-Agent") and  value is a value of HTTP header to setup (such as "BrowserMob-Agent"). Example: `{"User-Agent": "BrowserMob-Agent"}`|
-Overrides normal DNS lookups and remaps the given hosts with the associated IP address | POST | */proxy/[port]/hosts* | Payload data should be **JSON** encoded set of hosts. Where key is a host name (such as "example.com") and value is a IP address which associatied with host hame (such as "1.2.3.4"'). Example: `{"example.com": "1.2.3.4"}`|
-Sets automatic basic authentication for the specified domain | POST | */proxy/[port]/auth/basic/[domain]* | Payload data should be **JSON** encoded username and password name/value pairs. Example: `{"username": "myUsername", "password": "myPassword"}`|
-Wait till all request are being made | PUT | */proxy/[port]/wait* |<p>*quietPeriodInMs* - Wait till all request are being made. Optional.</p><p>*timeoutInMs* - Sets quiet period in milliseconds. Optional.</p>|
-Handles different proxy timeouts | PUT | *proxy/[port]/timeout* |<p>Payload data should be **JSON** encoded set of parameters. Where key is a parameters name (such as "connectionTimeout") and  value is a value of parameter to setup (such as "500")</p><p>*requestTimeout* - Request timeout in milliseconds. A timeout value of -1 is interpreted as infinite timeout. Optional, default to "-1".</p><p>*readTimeout* - Read timeout in milliseconds. Which is the timeout for waiting for data or, put differently, a maximum period inactivity between two consecutive data packets). A timeout value of zero is interpreted as an infinite timeout. Optional, default to "60000".</p><p>*connectionTimeout* - Determines the timeout in milliseconds until a connection is established. A timeout value of zero is interpreted as an infinite timeout. Optional, default to "60000".</p><p>*dnsCacheTimeout* - Sets the maximum length of time that records will be stored in this Cache. A nonpositive value disables this feature (that is, sets no limit). Optional, default to "0".</p>Example: `{"connectionTimeout" : "500", "readTimeout" : "200"}`|
-Redirecting URL's | PUT | */proxy/[port]/rewrite* |<p>*matchRegex* - A matching URL regular expression.</p><p>*replace* - replacement URL.</p>|
-Removes all URL redirection rules currently in effect | DELETE | */proxy/[port]/rewrite* ||
-Setting the retry count | PUT | */proxy/[port]/retry* |<p>*retrycount* - The number of times a method will be retried.</p>|
-Empties the DNS cache | DELETE | */proxy/[port]/dns/cache* ||
+Get a list of ports attached to `ProxyServer` instances managed by `ProxyManager` | GET | _/proxy_ ||
+Creates a new proxy to run requests off of | POST | _/proxy_ | <p>_port_ - Integer, The specific port to start the proxy service on. Optional, default is generated and returned in response.</p><p>_proxyUsername_ - String, The username to use to authenticate with the chained proxy. Optional, default to null.</p><p>_proxyPassword_ - String, The password to use to authenticate with the chained proxy. Optional, default to null.</p><p>_bindAddress_ - String, If running BrowserMob Proxy in a multi-homed environment, specify a desired bind address. Optional, default to "0.0.0.0".</p><p>_serverBindAddress_ - String, If running BrowserMob Proxy in a multi-homed environment, specify a desired server bind address. Optional, default to "0.0.0.0".</p><p>_useEcc_ - Boolean. True, Uses Elliptic Curve Cryptography for certificate impersonation. Optional, default to "false".</p><p>_trustAllServers_ - Boolean. True, Disables verification of all upstream servers' SSL certificates. All upstream servers will be trusted, even if they do not present valid certificates signed by certification authorities in the JDK's trust store. Optional, default to "false".</p>|
+<a name="harcreate">Creates a new HAR</a> attached to the proxy and returns the HAR content if there was a previous HAR. _[port]_ in request path it is port where your proxy was started | PUT |_/proxy/[port]/har_ |<p>_captureHeaders_ - Boolean, capture headers or not. Optional, default to "false".</p><p>_captureCookies_ - Boolean, capture cookies or not. Optional, default to "false".</p><p>_captureContent_ - Boolean, capture content bodies or not. Optional, default to "false".</p><p>_captureBinaryContent_ - Boolean, capture binary content or not. Optional, default to "false".</p><p>_initialPageRef_ - The string name of The first page ref that should be used in the HAR. Optional, default to "Page 1".</p><p>_initialPageTitle_ - The title of first HAR page. Optional, default to _initialPageRef_.</p>
+Starts a new page on the existing HAR. _[port]_ in request path it is port where your proxy was started | PUT | _/proxy/[port]/har/pageRef_ |<p>_pageRef_ - The string name of the first page ref that should be used in the HAR. Optional, default to "Page N" where N is the next page number.</p><p>_pageTitle_ - The title of new HAR page. Optional, default to `pageRef`.</p>
+Add a HAR filter pattern|PUT|/proxy/[port]/capture/pattern|<p>_regex_ - A comma separated list of regular expressions.</p>|
+Clear HAR filter patterns|DELETE|/proxy/[port]/capture/patterns|
+Get HAR filter patterns|GET|/proxy/[port]/capture/patterns|
+Shuts down the proxy and closes the port. _[port]_ in request path it is port where your proxy was started | DELETE | _/proxy/[port]_ ||
+Returns the JSON/HAR content representing all the HTTP traffic passed through the proxy (provided you have already created the HAR with [this method](#harcreate)) | GET | _/proxy/[port]/har_ ||
+Displays whitelisted items | GET | _/proxy/[port]/whitelist_ ||
+Sets a list of URL patterns to whitelist | PUT | _/proxy/[port]/whitelist_ |<p>_regex_ - A comma separated list of regular expressions.</p><p>_status_ - The HTTP status code to return for URLs that do not match the whitelist.</p>|
+Clears all URL patterns from the whitelist  | DELETE | _/proxy/[port]/whitelist_ ||
+Displays blacklisted items | GET | _/proxy/[port]/blacklist_ ||
+Set a URL to blacklist | PUT | _/proxy/[port]/blacklist_ |<p>_regex_ - The blacklist regular expression.</p><p>_status_ - The HTTP status code to return for URLs that are blacklisted.</p><p>_method_ - The regular expression for matching HTTP method (GET, POST, PUT, etc). Optional, by default processing all HTTP method.</p>|
+Clears all URL patterns from the blacklist | DELETE | _/proxy/[port]/blacklist_ ||
+Limit the bandwidth through the proxy on the _[port]_ | PUT | _/proxy/[port]/limit_ |<p>_downstreamKbps_ - Sets the downstream bandwidth limit in kbps. Optional.</p><p>_upstreamKbps_ - Sets the upstream bandwidth limit kbps. Optional, by default unlimited.</p><p>_downstreamMaxKB_ - Specifies how many kilobytes in total the client is allowed to download through the proxy. Optional, by default unlimited.</p><p>_upstreamMaxKB_ - Specifies how many kilobytes in total the client is allowed to upload through the proxy. Optional, by default unlimited.</p><p>_latency_ - Add the given latency to each HTTP request. Optional, by default all requests are invoked without latency.</p><p>_enable_ - A boolean that enable bandwidth limiter. Optional, by default to "false", but setting any of the properties above will implicitly enable throttling</p><p>_payloadPercentage_ - Specifying what percentage of data sent is payload, e.g. use this to take into account overhead due to tcp/ip. Optional.</p><p>_maxBitsPerSecond_ - The max bits per seconds you want this instance of StreamManager to respect. Optional.</p>
+Displays the amount of data remaining to be uploaded/downloaded until the limit is reached | GET | _/proxy/[port]/limit_ ||
+Set and override HTTP Request headers | POST | _/proxy/[port]/headers_ | Payload data should be **JSON** encoded set of headers. Where key is a header name (such as "User-Agent") and  value is a value of HTTP header to setup (such as "BrowserMob-Agent"). Example: `{"User-Agent": "BrowserMob-Agent"}`|
+Overrides normal DNS lookups and remaps the given hosts with the associated IP address | POST | _/proxy/[port]/hosts_ | Payload data should be **JSON** encoded set of hosts. Where key is a host name (such as "example.com") and value is a IP address which associatied with host hame (such as "1.2.3.4"'). Example: `{"example.com": "1.2.3.4"}`|
+Sets automatic basic authentication for the specified domain | POST | _/proxy/[port]/auth/basic/[domain]_ | Payload data should be **JSON** encoded username and password name/value pairs. Example: `{"username": "myUsername", "password": "myPassword"}`|
+Wait till all request are being made | PUT | _/proxy/[port]/wait_ |<p>_quietPeriodInMs_ - Wait till all request are being made. Optional.</p><p>_timeoutInMs_ - Sets quiet period in milliseconds. Optional.</p>|
+Handles different proxy timeouts | PUT | _proxy/[port]/timeout_ |<p>Payload data should be **JSON** encoded set of parameters. Where key is a parameters name (such as "connectionTimeout") and  value is a value of parameter to setup (such as "500")</p><p>_requestTimeout_ - Request timeout in milliseconds. A timeout value of -1 is interpreted as infinite timeout. Optional, default to "-1".</p><p>_readTimeout_ - Read timeout in milliseconds. Which is the timeout for waiting for data or, put differently, a maximum period inactivity between two consecutive data packets). A timeout value of zero is interpreted as an infinite timeout. Optional, default to "60000".</p><p>_connectionTimeout_ - Determines the timeout in milliseconds until a connection is established. A timeout value of zero is interpreted as an infinite timeout. Optional, default to "60000".</p><p>_dnsCacheTimeout_ - Sets the maximum length of time that records will be stored in this Cache. A nonpositive value disables this feature (that is, sets no limit). Optional, default to "0".</p>Example: `{"connectionTimeout" : "500", "readTimeout" : "200"}`|
+Redirecting URL's | PUT | _/proxy/[port]/rewrite_ |<p>_matchRegex_ - A matching URL regular expression.</p><p>_replace_ - replacement URL.</p>|
+Removes all URL redirection rules currently in effect | DELETE | _/proxy/[port]/rewrite_ ||
+Setting the retry count | PUT | _/proxy/[port]/retry_ |<p>_retrycount_ - The number of times a method will be retried.</p>|
+Empties the DNS cache | DELETE | _/proxy/[port]/dns/cache_ ||
 | [REST API interceptors with LittleProxy](#interceptorsRESTapiLP) |||
-|Describe your own request interception | POST | */proxy/[port]/filter/request* | A string which determinates interceptor rules. See more [here](#interceptorsRESTapiLPRequestFilter) |
-|Describe your own response interception | POST | */proxy/[port]/filter/response* | A string which determinates interceptor rules. See more [here](#interceptorsRESTapiLPResponseFilter) |
+|Describe your own request interception | POST | _/proxy/[port]/filter/request_ | A string which determinates interceptor rules. See more [here](#interceptorsRESTapiLPRequestFilter) |
+|Describe your own response interception | POST | _/proxy/[port]/filter/response_ | A string which determinates interceptor rules. See more [here](#interceptorsRESTapiLPResponseFilter) |
 | [REST API with Legacy interceptors](#interceptorsRESTapiLegacy) ||||
-|Describe your own request interception | POST | */proxy/[port]/interceptor/request* | A string which determinates interceptor rules. See more [here](#interceptorsRESTapiLegacy) |
-|Describe your own response interception | POST | */proxy/[port]/interceptor/response* | A string which determinates interceptor rules. See more [here](#interceptorsRESTapiLegacy) |
+|Describe your own request interception | POST | _/proxy/[port]/interceptor/request_ | A string which determinates interceptor rules. See more [here](#interceptorsRESTapiLegacy) |
+|Describe your own response interception | POST | _/proxy/[port]/interceptor/response_ | A string which determinates interceptor rules. See more [here](#interceptorsRESTapiLegacy) |
 
 For example, once you've started the proxy you can create a new HAR to start recording data like so:
 
@@ -183,14 +192,14 @@ system properties will be used to specify the upstream proxy.
 
 ### Command-line Arguments
 
- - -port \<port\>
-  - Port on which the API listens. Default value is 8080.
- - -address <address>
-  - Address to which the API is bound. Default value is 0.0.0.0.
- - -proxyPortRange \<from\>-\<to\>
-  - Range of ports reserved for proxies. Only applies if *port* parameter is not supplied in the POST request. Default values are \<port\>+1 to \<port\>+500+1.
- - -ttl \<seconds\>
-  - Proxy will be automatically deleted after a specified time period. Off by default.
+- -port \<port\>
+- Port on which the API listens. Default value is 8080.
+- -address <address>
+- Address to which the API is bound. Default value is 0.0.0.0.
+- -proxyPortRange \<from\>-\<to\>
+- Range of ports reserved for proxies. Only applies if _port_ parameter is not supplied in the POST request. Default values are \<port\>+1 to \<port\>+500+1.
+- -ttl \<seconds\>
+- Proxy will be automatically deleted after a specified time period. Off by default.
 
 ### Embedded Mode
 
@@ -200,7 +209,8 @@ system properties will be used to specify the upstream proxy.
 
 BrowserMob Proxy 2.1 separates the Embedded Mode and REST API into two modules. If you only need Embedded Mode functionality, add the `browsermob-core` artifact as a dependency. The REST API artifact is `browsermob-rest`.
 
-If you're using Java and Selenium, the easiest way to get started is to embed the project directly in your test. First, you'll need to make sure that all the dependencies are imported in to the project. You can find them in the *lib* directory. Or, if you're using Maven, you can add this to your pom:
+If you're using Java and Selenium, the easiest way to get started is to embed the project directly in your test. First, you'll need to make sure that all the dependencies are imported in to the project. You can find them in the _lib_ directory. Or, if you're using Maven, you can add this to your pom:
+
 ```xml
     <dependency>
         <groupId>net.lightbody.bmp</groupId>
@@ -211,6 +221,7 @@ If you're using Java and Selenium, the easiest way to get started is to embed th
 ```
 
 Once done, you can start a proxy using `net.lightbody.bmp.BrowserMobProxy`:
+
 ```java
     BrowserMobProxy proxy = new BrowserMobProxyServer();
     proxy.start(0);
@@ -226,6 +237,7 @@ Consult the Javadocs on the `net.lightbody.bmp.BrowserMobProxy` class for the fu
 **Selenium 3 users**: Due to a [geckodriver issue](https://github.com/mozilla/geckodriver/issues/97), Firefox 51 and lower do not properly support proxies with WebDriver's DesiredCapabilities. See [this answer](http://stackoverflow.com/a/41373808/4256475) for a suitable work-around.
 
 BrowserMob Proxy makes it easy to use a proxy in Selenium tests:
+
 ```java
     // start the proxy
     BrowserMobProxy proxy = new BrowserMobProxyServer();
@@ -266,12 +278,13 @@ BrowserMob Proxy instance on a separate machine and configure the Selenium Proxy
 
 There are four new methods to support request and response interception in LittleProxy:
 
-  - `addRequestFilter`
-  - `addResponseFilter`
-  - `addFirstHttpFilterFactory`
-  - `addLastHttpFilterFactory`
+- `addRequestFilter`
+- `addResponseFilter`
+- `addFirstHttpFilterFactory`
+- `addLastHttpFilterFactory`
 
 For most use cases, including inspecting and modifying requests/responses, `addRequestFilter` and `addResponseFilter` will be sufficient. The request and response filters are easy to use:
+
 ```java
     proxy.addRequestFilter(new RequestFilter() {
             @Override
@@ -305,6 +318,7 @@ For most use cases, including inspecting and modifying requests/responses, `addR
 ```
 
 With Java 8, the syntax is even more concise:
+
 ```java
         proxy.addResponseFilter((response, contents, messageInfo) -> {
             if (/*...some filtering criteria...*/) {
@@ -344,6 +358,7 @@ curl -i -X POST -H 'Content-Type: text/plain' -d "contents.setTextContents('<htm
 #### Legacy interceptors
 
 If you are using the legacy ProxyServer implementation, you can manipulate the requests like so:
+
 ```java
     BrowserMobProxy server = new ProxyServer();
     ((LegacyProxyServer)server).addRequestInterceptor(new RequestInterceptor() {
@@ -354,6 +369,7 @@ If you are using the legacy ProxyServer implementation, you can manipulate the r
         }
     });
 ```
+
 <a name="interceptorsRESTapiLegacy"></a>You can also POST a JavaScript payload to `/:port/interceptor/request` and `/:port/interceptor/response` using the REST interface. The functions will have a `request`/`response` variable, respectively, and a `har` variable (which may be null if a HAR isn't set up yet). The JavaScript code will be run by [Rhino](https://github.com/mozilla/rhino) and have access to the same Java API in the example above:
 
     [~]$ curl -X POST -H 'Content-Type: text/plain' -d 'request.getMethod().removeHeaders("User-Agent");' http://localhost:8080/proxy/8081/interceptor/request
@@ -391,6 +407,7 @@ You'll need maven (`brew install maven` if you're on OS X):
 You'll find the standalone BrowserMob Proxy distributable zip at `browsermob-dist/target/browsermob-proxy-2.1.5-SNAPSHOT-bin.zip`. Unzip the contents and run the `browsermob-proxy` or `browsermob-proxy.bat` files in the `bin` directory.
 
 When you build the latest code from source, you'll have access to the latest snapshot release. To use the SNAPSHOT version in your code, modify the version in your pom:
+
 ```xml
     <dependency>
         <groupId>net.lightbody.bmp</groupId>
