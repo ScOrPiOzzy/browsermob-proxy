@@ -429,6 +429,19 @@ public class ProxyServer implements LegacyProxyServer, BrowserMobProxy {
     }
 
     @Override
+    public void addCapturePattern(String captureRegex) {
+    }
+
+    @Override
+    public void clearCapturePatterns() {
+    }
+
+    @Override
+    public Collection<String> getCapturePatterns() {
+        throw new UnsupportedOperationException("Not supported in legacy ProxyServer");
+    }
+
+    @Override
     public Har newPage() {
         return newPage(null);
     }

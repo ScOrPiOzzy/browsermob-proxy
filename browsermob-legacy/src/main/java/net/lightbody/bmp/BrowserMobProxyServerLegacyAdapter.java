@@ -413,6 +413,21 @@ public class BrowserMobProxyServerLegacyAdapter extends BrowserMobProxyServer im
         }
     }
 
+    @Override
+    public void addCapturePattern(String captureRegex) {
+        super.addCapturePattern(captureRegex);
+    }
+
+    @Override
+    public void clearCapturePatterns() {
+        super.clearCapturePatterns();
+    }
+
+    @Override
+    public Collection<String> getCapturePatterns() {
+        return super.getCapturePatterns();
+    }
+
     /**
      * @deprecated this method has no effect and will be removed from a future version
      */

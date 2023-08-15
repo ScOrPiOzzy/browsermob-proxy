@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <packaging>jar</packaging>
 
     <parent>
@@ -25,7 +27,8 @@
                 <configuration>
                     <argLine>-Xmx1g -XX:MaxPermSize=256m</argLine>
                     <systemProperties>
-                        <!-- Execute tests against the LP version unless the legacy profile is explicitly specified. -->
+                        <!-- Execute tests against the LP version unless the legacy profile is
+                        explicitly specified. -->
                         <bmp.use.littleproxy>${use.littleproxy}</bmp.use.littleproxy>
                     </systemProperties>
                 </configuration>
@@ -143,7 +146,8 @@
     </dependencies>
 
     <profiles>
-        <!-- When activating the legacy profile, this module's tests will be run using the legacy ProxyServer implementation -->
+        <!-- When activating the legacy profile, this module's tests will be run using the legacy
+        ProxyServer implementation -->
         <profile>
             <id>legacy</id>
             <properties>
