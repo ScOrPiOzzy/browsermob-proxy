@@ -4,7 +4,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
-import org.littleshoot.proxy.HttpFiltersAdapter;
+import net.lightbody.bmp.util.BrowserMobHttpUtil;
+
 import org.littleshoot.proxy.impl.ProxyUtils;
 
 /**
@@ -23,11 +24,11 @@ public class HttpsOriginalHostCaptureFilter extends HttpsHostCaptureFilter {
         // capturing the original host (and the remapped/modified host in clientToProxyRequest() below) guarantees that we will
         // have the "true" host, rather than relying on the Host header in subsequent requests (which may be absent or spoofed by malicious clients).
         if (ProxyUtils.isCONNECT(originalRequest)) {
-            Attribute<String> originalHostAttr = ctx.attr(AttributeKey.<String>valueOf(HttpsAwareFiltersAdapter.ORIGINAL_HOST_ATTRIBUTE_NAME));
+            Attribute<String> originalHostAttr = ctx.attr(AttributeKey.<String>valueOf(BrowserMobHttpUtil.ATTRIBUTE_NAME_ORIGINAL_HOST));
             String hostAndPort = originalRequest.getUri();
             originalHostAttr.set(hostAndPort);
 
-            Attribute<Boolean> isHttpsAttr = ctx.attr(AttributeKey.<Boolean>valueOf(HttpsAwareFiltersAdapter.IS_HTTPS_ATTRIBUTE_NAME));
+            Attribute<Boolean> isHttpsAttr = ctx.attr(AttributeKey.<Boolean>valueOf(BrowserMobHttpUtil.ATTRIBUTE_NAME_IS_HTTPS));
             isHttpsAttr.set(true);
         }
     }

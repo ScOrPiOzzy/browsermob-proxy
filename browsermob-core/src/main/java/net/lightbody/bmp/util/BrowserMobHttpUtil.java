@@ -4,11 +4,16 @@ import com.google.common.io.BaseEncoding;
 import com.google.common.net.HostAndPort;
 import com.google.common.net.MediaType;
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
+import io.netty.util.Attribute;
+import io.netty.util.AttributeKey;
 import net.lightbody.bmp.exception.DecompressionException;
 import net.lightbody.bmp.exception.UnsupportedCharsetException;
+
+import org.littleshoot.proxy.impl.ProxyUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +33,10 @@ import java.util.zip.InflaterInputStream;
  */
 public class BrowserMobHttpUtil {
     private static final Logger log = LoggerFactory.getLogger(BrowserMobHttpUtil.class);
+
+    public static final String ATTRIBUTE_NAME_IS_HTTPS = "isHttps";
+    public static final String ATTRIBUTE_NAME_HOST = "host";
+    public static final String ATTRIBUTE_NAME_ORIGINAL_HOST = "originalHost";
 
     /**
      * Default MIME content type if no Content-Type header is present. According to the HTTP 1.1 spec, section 7.2.1:
@@ -237,6 +246,85 @@ public class BrowserMobHttpUtil {
         } else {
             return path;
         }
+    }
+
+    public static boolean isHttps(ChannelHandlerContext ctx) {
+        Attribute<Boolean> isHttpsAttr = ctx.attr(AttributeKey.<Boolean>valueOf(ATTRIBUTE_NAME_IS_HTTPS));
+        Boolean isHttps = isHttpsAttr.get();
+        return isHttps != null && isHttps;
+    }
+
+    /**
+     * Returns the host and port of the specified request for both HTTP and HTTPS requests.  The request may reflect
+     * modifications from this or other filters. This filter instance must be currently handling the specified request;
+     * otherwise the results are undefined.
+     *
+     * @param modifiedRequest a possibly-modified version of the request currently being processed
+     * @return host and port of the specified request
+     */
+    public static String getHostAndPort(HttpRequest modifiedRequest, ChannelHandlerContext ctx) {
+        // For HTTP requests, the host and port can be read from the request itself using the URI and/or
+        //   Host header. for HTTPS requests, the host and port are not available in the request. by using the
+        //   getHttpsRequestHostAndPort() helper method, we can retrieve the host and port for HTTPS requests.
+        if (isHttps(ctx)) {
+            return getHttpsRequestHostAndPort(ctx);
+        } else {
+            return HttpUtil.getHostAndPortFromRequest(modifiedRequest);
+        }
+    }
+
+    /**
+     * Returns the host and port of this HTTPS request, including any modifications by other filters.
+     *
+     * @return host and port of this HTTPS request
+     * @throws IllegalStateException if this is not an HTTPS request
+     */
+    public static String getHttpsRequestHostAndPort(ChannelHandlerContext ctx) throws IllegalStateException {
+        if (!isHttps(ctx)) {
+            throw new IllegalStateException("Request is not HTTPS. Cannot get host and port on non-HTTPS request using this method.");
+        }
+
+        Attribute<String> hostnameAttr = ctx.attr(AttributeKey.<String>valueOf(ATTRIBUTE_NAME_HOST));
+        return hostnameAttr.get();
+    }
+
+    /**
+     * Returns the full, absolute URL of the specified request for both HTTP and HTTPS URLs. The request may reflect
+     * modifications from this or other filters. This filter instance must be currently handling the specified request;
+     * otherwise the results are undefined.
+     *
+     * @param modifiedRequest a possibly-modified version of the request currently being processed
+     * @return the full URL of the request, including scheme, host, port, path, and query parameters
+     */
+    public static String getFullUrl(HttpRequest modifiedRequest, ChannelHandlerContext ctx) {
+        // special case: for HTTPS requests, the full URL is scheme (https://) + the URI of this request
+        if (ProxyUtils.isCONNECT(modifiedRequest)) {
+            // CONNECT requests contain the default port, even if it isn't specified on the request.
+            String hostNoDefaultPort = BrowserMobHttpUtil.removeMatchingPort(modifiedRequest.getUri(), 443);
+            return "https://" + hostNoDefaultPort;
+        }
+
+        // To get the full URL, we need to retrieve the Scheme, Host + Port, Path, and Query Params from the request.
+        // If the request URI starts with http:// or https://, it is already a full URL and can be returned directly.
+        if (HttpUtil.startsWithHttpOrHttps(modifiedRequest.getUri())) {
+            return modifiedRequest.getUri();
+        }
+
+        // The URI did not include the scheme and host, so examine the request to obtain them:
+        // Scheme: the scheme (HTTP/HTTPS) are based on the type of connection, obtained from isHttps()
+        // Host and Port: available for HTTP and HTTPS requests using the getHostAndPort() helper method.
+        // Path + Query Params: since the request URI doesn't start with the scheme, we can safely assume that the URI
+        //    contains only the path and query params.
+        String hostAndPort = getHostAndPort(modifiedRequest, ctx);
+        String path = modifiedRequest.getUri();
+        String url;
+
+        if (isHttps(ctx)) {
+            url = "https://" + hostAndPort + path;
+        } else {
+            url = "http://" + hostAndPort + path;
+        }
+        return url;
     }
 
     /**
