@@ -152,6 +152,11 @@ public class ProxyResource {
         proxy.setCaptureContent(Boolean.parseBoolean(captureContent));
         proxy.setCaptureBinaryContent(Boolean.parseBoolean(captureBinaryContent));
 
+        String captureRegex = request.param("captureRegex");
+        if (captureRegex != null) {
+            proxy.addCapturePattern(captureRegex);
+        }
+
         String captureCookies = request.param("captureCookies");
         if (proxy instanceof BrowserMobProxyServer && Boolean.parseBoolean(captureCookies)) {
             BrowserMobProxyServer browserMobProxyServer = (BrowserMobProxyServer) proxy;
@@ -177,6 +182,42 @@ public class ProxyResource {
         String pageTitle = request.param("pageTitle");
         proxy.newPage(pageRef, pageTitle);
 
+        return Reply.saying().ok();
+    }
+
+    @Get
+    @At("/:port/capture/patterns")
+    public Reply<?> getCapturePatterns(@Named("port") int port, Request<String> request) {
+        LegacyProxyServer proxy = proxyManager.get(port);
+        if (proxy == null) {
+            return Reply.saying().notFound();
+        }
+
+        return Reply.with(proxy.getCapturePatterns()).as(Json.class);
+    }
+
+    @Put
+    @At("/:port/capture/pattern")
+    public Reply<?> addCapturePattern(@Named("port") int port, Request<String> request) {
+        LegacyProxyServer proxy = proxyManager.get(port);
+        if (proxy == null) {
+            return Reply.saying().notFound();
+        }
+
+        String capturePattern = request.param("regex");
+        proxy.addCapturePattern(capturePattern);
+
+        return Reply.saying().ok();
+    }
+
+    @Delete
+    @At("/:port/capture/patterns")
+    public Reply<?> clearCapturePatterns(@Named("port") int port, Request<String> request) {
+        LegacyProxyServer proxy = proxyManager.get(port);
+        if (proxy == null) {
+            return Reply.saying().notFound();
+        }
+        proxy.clearCapturePatterns();
         return Reply.saying().ok();
     }
 
