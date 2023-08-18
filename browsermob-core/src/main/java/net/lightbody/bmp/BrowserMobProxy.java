@@ -5,6 +5,7 @@ import net.lightbody.bmp.filters.RequestFilter;
 import net.lightbody.bmp.filters.ResponseFilter;
 import net.lightbody.bmp.mitm.TrustSource;
 import net.lightbody.bmp.proxy.BlacklistEntry;
+import net.lightbody.bmp.proxy.CapturePattern;
 import net.lightbody.bmp.proxy.CaptureType;
 import net.lightbody.bmp.proxy.auth.AuthType;
 import net.lightbody.bmp.proxy.dns.AdvancedHostResolver;
@@ -193,7 +194,7 @@ public interface BrowserMobProxy {
     /**
      * Enables HAR capture filters. If a request or response matches any of the specified filters, it will be captured in the HAR file.
      */
-    void addCapturePattern(String pattern);
+    void addCapturePattern(String pattern, String method);
 
     /**
      * Clear HAR capture filters.
@@ -203,7 +204,7 @@ public interface BrowserMobProxy {
     /**
      * @return a copy of the current HAR capture filters. The Set cannot be used to modify the HAR capture filters currently in effect.
      */
-    Collection<String> getCapturePatterns();
+    Collection<CapturePattern> getCapturePatterns();
 
     /**
      * Starts a new HAR page using the default page naming convention. The default page naming convention is "Page #", where "#" resets to 1

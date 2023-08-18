@@ -128,11 +128,11 @@ public interface LegacyProxyServer {
 
     void setCaptureBinaryContent(boolean captureBinaryContent);
 
-    void addCapturePattern(String captureRegex);
+    void addCapturePattern(String captureRegex, String method);
 
     void clearCapturePatterns();
 
-    Collection<String> getCapturePatterns();
+    Collection<CapturePattern> getCapturePatterns();
 
     void clearDNSCache();
 

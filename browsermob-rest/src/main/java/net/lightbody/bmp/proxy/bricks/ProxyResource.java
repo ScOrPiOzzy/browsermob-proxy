@@ -154,7 +154,7 @@ public class ProxyResource {
 
         String captureRegex = request.param("captureRegex");
         if (captureRegex != null) {
-            proxy.addCapturePattern(captureRegex);
+            proxy.addCapturePattern(captureRegex, null);
         }
 
         String captureCookies = request.param("captureCookies");
@@ -205,7 +205,8 @@ public class ProxyResource {
         }
 
         String capturePattern = request.param("regex");
-        proxy.addCapturePattern(capturePattern);
+        String method = request.param("method");
+        proxy.addCapturePattern(capturePattern, method);
 
         return Reply.saying().ok();
     }

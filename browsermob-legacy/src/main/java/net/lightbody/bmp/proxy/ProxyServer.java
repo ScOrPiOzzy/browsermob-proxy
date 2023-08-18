@@ -429,7 +429,7 @@ public class ProxyServer implements LegacyProxyServer, BrowserMobProxy {
     }
 
     @Override
-    public void addCapturePattern(String captureRegex) {
+    public void addCapturePattern(String captureRegex, String method) {
     }
 
     @Override
@@ -437,7 +437,7 @@ public class ProxyServer implements LegacyProxyServer, BrowserMobProxy {
     }
 
     @Override
-    public Collection<String> getCapturePatterns() {
+    public Collection<CapturePattern> getCapturePatterns() {
         throw new UnsupportedOperationException("Not supported in legacy ProxyServer");
     }
 

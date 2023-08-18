@@ -5,6 +5,7 @@ import com.google.common.net.HostAndPort;
 import net.lightbody.bmp.client.ClientUtil;
 import net.lightbody.bmp.exception.NameResolutionException;
 import net.lightbody.bmp.proxy.BlacklistEntry;
+import net.lightbody.bmp.proxy.CapturePattern;
 import net.lightbody.bmp.proxy.CaptureType;
 import net.lightbody.bmp.proxy.LegacyProxyServer;
 import net.lightbody.bmp.proxy.auth.AuthType;
@@ -414,8 +415,8 @@ public class BrowserMobProxyServerLegacyAdapter extends BrowserMobProxyServer im
     }
 
     @Override
-    public void addCapturePattern(String captureRegex) {
-        super.addCapturePattern(captureRegex);
+    public void addCapturePattern(String captureRegex, String method) {
+        super.addCapturePattern(captureRegex, method);
     }
 
     @Override
@@ -424,7 +425,7 @@ public class BrowserMobProxyServerLegacyAdapter extends BrowserMobProxyServer im
     }
 
     @Override
-    public Collection<String> getCapturePatterns() {
+    public Collection<CapturePattern> getCapturePatterns() {
         return super.getCapturePatterns();
     }
 

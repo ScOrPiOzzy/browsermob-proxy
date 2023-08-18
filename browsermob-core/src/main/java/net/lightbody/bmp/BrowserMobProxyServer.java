@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.MapMaker;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpObject;
 import io.netty.handler.codec.http.HttpRequest;
 import net.lightbody.bmp.client.ClientUtil;
@@ -174,7 +175,7 @@ public class BrowserMobProxyServer implements BrowserMobProxy {
     /**
      * List of accepted URL patterns. Unlisted URL patterns will be rejected in har.
      */
-    private final AtomicReference<CapturePattern> capturePattern = new AtomicReference<>(CapturePattern.CAPTURE_PATTERN);
+    private volatile Collection<CapturePattern> capturePatterns = new CopyOnWriteArrayList<>();
 
     /**
      * Additional headers that will be sent with every request. The map is declared as a ConcurrentMap to indicate that writes may be performed
@@ -1143,52 +1144,34 @@ public class BrowserMobProxyServer implements BrowserMobProxy {
     }
 
     @Override
-    public void addCapturePattern(String captureRegex) {
-        // to make sure this method is thread-safe, we need to guarantee that the
-        // "snapshot" of the whitelist taken at the beginning
-        // of the method has not been replaced by the time we have constructed a new
-        // whitelist at the end of the method
-        boolean capturePatternUpdated = false;
-        while (!capturePatternUpdated) {
-            CapturePattern currentCapturePattern = this.capturePattern.get();
-            // retrieve the response code and list of patterns from the current whitelist,
-            // the construct a new list of patterns that contains
-            // all of the old whitelist's patterns + this new pattern
-            List<String> newPatterns = new ArrayList<>(currentCapturePattern.getPatterns().size() + 1);
-            for (Pattern pattern : currentCapturePattern.getPatterns()) {
-                newPatterns.add(pattern.pattern());
-            }
-            newPatterns.add(captureRegex);
-
-            // create a new (immutable) Whitelist object with the new pattern list and
-            // status code
-            CapturePattern newCapturePattern = new CapturePattern(newPatterns);
-
-            // replace the current capturePatternList with the new capturePatternList only
-            // if the current
-            // capturePatternList has not changed since we started
-            capturePatternUpdated = this.capturePattern.compareAndSet(currentCapturePattern, newCapturePattern);
-        }
+    public void addCapturePattern(String captureRegex, String method) {
+        this.capturePatterns.add(new CapturePattern(captureRegex, method));
     }
 
     @Override
-    public Collection<String> getCapturePatterns() {
-        ImmutableList.Builder<String> builder = ImmutableList.builder();
-        for (Pattern pattern : this.capturePattern.get().getPatterns()) {
-            builder.add(pattern.pattern());
-        }
-        return builder.build();
+    public Collection<CapturePattern> getCapturePatterns() {
+        return Collections.unmodifiableCollection(this.capturePatterns);
     }
 
     @Override
     public void clearCapturePatterns() {
-        capturePattern.set(new CapturePattern());
+        this.capturePatterns.clear();
     }
 
-    private boolean isValidateUrl(HttpRequest originalRequest, ChannelHandlerContext ctx) {
-        CapturePattern capturePattern = this.capturePattern.get();
-        String url = BrowserMobHttpUtil.getFullUrl(originalRequest, ctx);
-        return capturePattern.matches(url);
+    private boolean isValidateUrl(HttpRequest httpRequest, ChannelHandlerContext ctx) {
+        if (HttpMethod.OPTIONS.equals(httpRequest.getMethod())) {
+            return false;
+        }
+        if (this.capturePatterns.isEmpty()) {
+            return true;
+        }
+        String url = BrowserMobHttpUtil.getFullUrl(httpRequest, ctx);
+        for (CapturePattern entry : this.capturePatterns) {
+            if (entry.matches(url, httpRequest.getMethod().name())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
